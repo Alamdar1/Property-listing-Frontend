@@ -57,5 +57,15 @@ src/
   pages/            # Page components (Home, AddListing, PropertyDetail)
   App.tsx           # Main app component
   main.tsx          # Entry point
-public/              # Static files
+
 ```
+## AI Usage
+
+**Bolt.new:** Scaffolded the initial React UI (pages, components, layout)
+**Custom modifications:** Adjusted API calls, form validation, and minor logic
+
+Time saved: ~2–3 hours on boilerplate setup
+public/              # Static files
+
+
+

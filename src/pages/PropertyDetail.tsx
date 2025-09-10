@@ -1,16 +1,45 @@
-import React from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Bed, Bath, Square, Home } from "lucide-react";
+import { ArrowLeft, MapPin, Bath, Square, Home } from "lucide-react";
 import { useProperty } from "../context/PropertyContext";
 
 function PropertyDetail() {
   const { id } = useParams<{ id: string }>();
-  const { getPropertyById } = useProperty();
+  const { getPropertyById, loading, error } = useProperty();
 
   if (!id) {
     return <Navigate to="/" replace />;
   }
 
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading property details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Error Loading Property
+          </h1>
+          <p className="text-red-600 mb-6">{error}</p>
+          <Link
+            to="/"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Properties
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const property = getPropertyById(id);
 
   if (!property) {
@@ -55,15 +84,16 @@ function PropertyDetail() {
       </Link>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Property Image */}
-        <div className="aspect-w-16 aspect-h-9 bg-gray-200">
-          <img
-            src={property.image}
-            alt={property.title}
-            className="w-full h-64 md:h-96 object-cover"
-          />
+        {/* Property Header */}
+        <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-blue-100 to-purple-100">
+          <div className="aspect-w-16 aspect-h-9 bg-gray-200">
+            <img
+              src={property.image}
+              alt={property.title}
+              className="w-full h-64 md:h-96 object-cover"
+            />
+          </div>
         </div>
-
         <div className="p-6 md:p-8">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
@@ -90,19 +120,7 @@ function PropertyDetail() {
           </div>
 
           {/* Property Details */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {property.bedrooms && (
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <Bed className="h-6 w-6 text-gray-600 mx-auto mb-2" />
-                <div className="text-2xl font-semibold text-gray-900">
-                  {property.bedrooms}
-                </div>
-                <div className="text-sm text-gray-600">
-                  Bedroom{property.bedrooms !== 1 ? "s" : ""}
-                </div>
-              </div>
-            )}
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {property.bathrooms && (
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Bath className="h-6 w-6 text-gray-600 mx-auto mb-2" />

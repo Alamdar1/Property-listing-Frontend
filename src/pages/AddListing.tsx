@@ -6,7 +6,6 @@ import {
   DollarSign,
   MapPin,
   FileText,
-  Bed,
   Bath,
   Square,
 } from "lucide-react";
@@ -95,18 +94,24 @@ function AddListing() {
     e.preventDefault();
 
     if (validateForm()) {
-      addProperty({
+      const propertyData = {
         title: formData.title.trim(),
         price: Number(formData.price),
         location: formData.location.trim(),
         description: formData.description.trim(),
-        bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
         bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
         area: formData.area ? Number(formData.area) : undefined,
         type: formData.type,
-      });
+      };
 
-      navigate("/");
+      addProperty(propertyData)
+        .then(() => {
+          navigate("/");
+        })
+        .catch((error) => {
+          console.error("Error adding property:", error);
+          // You could add error handling UI here
+        });
     }
   };
 
@@ -262,36 +267,6 @@ function AddListing() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Bedrooms */}
-              <div>
-                <label
-                  htmlFor="bedrooms"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Bedrooms
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Bed className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="number"
-                    id="bedrooms"
-                    name="bedrooms"
-                    value={formData.bedrooms}
-                    onChange={handleInputChange}
-                    placeholder="2"
-                    min="0"
-                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                      errors.bedrooms ? "border-red-300" : "border-gray-300"
-                    }`}
-                  />
-                </div>
-                {errors.bedrooms && (
-                  <p className="mt-2 text-sm text-red-600">{errors.bedrooms}</p>
-                )}
-              </div>
-
               {/* Bathrooms */}
               <div>
                 <label
@@ -312,7 +287,7 @@ function AddListing() {
                     onChange={handleInputChange}
                     placeholder="2"
                     min="0"
-                    step="0.5"
+                    step="1"
                     className={`block w-full pl-10 pr-3 py-3 border rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                       errors.bathrooms ? "border-red-300" : "border-gray-300"
                     }`}

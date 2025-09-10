@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 export interface Property {
   id: string;
@@ -8,6 +8,7 @@ export interface Property {
   description: string;
   image?: string;
   bedrooms?: number;
+
   bathrooms?: number;
   area?: number;
   type?: string;
@@ -15,93 +16,107 @@ export interface Property {
 
 interface PropertyContextType {
   properties: Property[];
-  addProperty: (property: Omit<Property, "id">) => void;
+  loading: boolean;
+  error: string | null;
+  addProperty: (property: Omit<Property, "id">) => Promise<void>;
   getPropertyById: (id: string) => Property | undefined;
+  refreshProperties: () => Promise<void>;
 }
 
 const PropertyContext = createContext<PropertyContextType | undefined>(
   undefined
 );
 
-const initialProperties: Property[] = [
-  {
-    id: "1",
-    title: "Modern Downtown Apartment",
-    price: 450000,
-    location: "Downtown, City Center",
-    description:
-      "Beautiful modern apartment in the heart of the city with stunning views and premium amenities. Features include hardwood floors, stainless steel appliances, and floor-to-ceiling windows.",
-    image:
-      "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800",
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 1200,
-    type: "Apartment",
-  },
-  {
-    id: "2",
-    title: "Cozy Suburban House",
-    price: 320000,
-    location: "Suburban Heights",
-    description:
-      "Charming family home with a spacious backyard, perfect for families. Recently renovated kitchen and bathrooms, new roof, and energy-efficient windows throughout.",
-    image:
-      "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800",
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 1800,
-    type: "House",
-  },
-  {
-    id: "3",
-    title: "Luxury Waterfront Condo",
-    price: 750000,
-    location: "Marina District",
-    description:
-      "Stunning waterfront condominium with panoramic ocean views. Features a private balcony, marble countertops, and access to exclusive building amenities including pool and gym.",
-    image:
-      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800",
-    bedrooms: 2,
-    bathrooms: 3,
-    area: 1500,
-    type: "Condo",
-  },
-  {
-    id: "4",
-    title: "Historic Victorian Home",
-    price: 580000,
-    location: "Heritage District",
-    description:
-      "Beautifully restored Victorian home with original architectural details. Features include restored hardwood floors, ornate moldings, and a wraparound porch.",
-    image:
-      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 2200,
-    type: "House",
-  },
-];
-
 export function PropertyProvider({ children }: { children: React.ReactNode }) {
-  const [properties, setProperties] = useState<Property[]>(initialProperties);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addProperty = (propertyData: Omit<Property, "id">) => {
-    const newProperty: Property = {
-      ...propertyData,
-      id: Date.now().toString(),
-      image:
-        "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800",
-    };
-    setProperties((prev) => [newProperty, ...prev]);
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(import.meta.env.VITE_API_URL);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Transform API data to match our Property interface
+      const transformedProperties: Property[] = data.map((item: Property) => ({
+        id: item.id?.toString() || Date.now().toString(),
+        title: item.title || "Untitled Property",
+        price: Number(item.price) || 0,
+        location: item.location || "Location not specified",
+        description: item.description || "No description available",
+        bathrooms: item?.bathrooms || 2,
+        area: item?.area ? Number(item.area) : 780,
+        type: item.type || undefined,
+        image:
+          "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800",
+      }));
+
+      setProperties(transformedProperties);
+    } catch (err) {
+      console.error("Error fetching properties:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch properties"
+      );
+      // Set empty array on error
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addProperty = async (propertyData: Omit<Property, "id">) => {
+    try {
+      const response = await fetch(import.meta.env.VITE_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(propertyData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh the properties list after adding
+      await fetchProperties();
+    } catch (err) {
+      console.error("Error adding property:", err);
+      throw new Error(
+        err instanceof Error ? err.message : "Failed to add property"
+      );
+    }
+  };
+
+  const refreshProperties = async () => {
+    await fetchProperties();
   };
 
   const getPropertyById = (id: string) => {
     return properties.find((property) => property.id === id);
   };
 
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
   return (
     <PropertyContext.Provider
-      value={{ properties, addProperty, getPropertyById }}
+      value={{
+        properties,
+        loading,
+        error,
+        addProperty,
+        getPropertyById,
+        refreshProperties,
+      }}
     >
       {children}
     </PropertyContext.Provider>
